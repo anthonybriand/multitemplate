@@ -1,6 +1,7 @@
 package multitemplate
 
 import (
+	"embed"
 	"html/template"
 	"testing"
 
@@ -8,9 +9,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//go:embed tests
+var templateFS embed.FS
+
 func createFromFileDynamic() Renderer {
 	r := NewRenderer()
 	r.AddFromFiles("index", "tests/base.html", "tests/article.html")
+
+	return r
+}
+
+func createFromFileInEmbedDynamic() Renderer {
+	r := NewRenderer()
+	r.AddFromFilesInEmbed("index", templateFS, "tests/base.html", "tests/article.html")
 
 	return r
 }
@@ -65,6 +76,20 @@ func TestMissingTemplateOrNameDynamic(t *testing.T) {
 func TestAddFromFilesDynamic(t *testing.T) {
 	router := gin.New()
 	router.HTMLRender = createFromFileDynamic()
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(200, "index", gin.H{
+			"title": "Test Multiple Template",
+		})
+	})
+
+	w := performRequest(router, "GET", "/")
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "<p>Test Multiple Template</p>\nHi, this is article template\n", w.Body.String())
+}
+
+func TestAddFromFilesInEmbedDynamic(t *testing.T) {
+	router := gin.New()
+	router.HTMLRender = createFromFileInEmbedDynamic()
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(200, "index", gin.H{
 			"title": "Test Multiple Template",

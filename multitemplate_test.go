@@ -1,6 +1,7 @@
 package multitemplate
 
 import (
+	"embed"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
+
+//go:embed tests
+var multitemplateFS embed.FS
 
 func performRequest(r http.Handler, method, path string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest(method, path, nil)
@@ -20,6 +24,13 @@ func performRequest(r http.Handler, method, path string) *httptest.ResponseRecor
 func createFromFile() Render {
 	r := New()
 	r.AddFromFiles("index", "tests/base.html", "tests/article.html")
+
+	return r
+}
+
+func createFromFileInEmbed() Render {
+	r := New()
+	r.AddFromFilesInEmbed("index", multitemplateFS, "tests/base.html", "tests/article.html")
 
 	return r
 }
@@ -67,6 +78,20 @@ func TestMissingTemplateOrName(t *testing.T) {
 func TestAddFromFiles(t *testing.T) {
 	router := gin.New()
 	router.HTMLRender = createFromFile()
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(200, "index", gin.H{
+			"title": "Test Multiple Template",
+		})
+	})
+
+	w := performRequest(router, "GET", "/")
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "<p>Test Multiple Template</p>\nHi, this is article template\n", w.Body.String())
+}
+
+func TestAddFromFilesInEmbed(t *testing.T) {
+	router := gin.New()
+	router.HTMLRender = createFromFileInEmbed()
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(200, "index", gin.H{
 			"title": "Test Multiple Template",

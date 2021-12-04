@@ -1,6 +1,7 @@
 package multitemplate
 
 import (
+	"embed"
 	"fmt"
 	"html/template"
 	"path/filepath"
@@ -38,6 +39,7 @@ type builderType int
 const (
 	templateType builderType = iota
 	filesTemplateType
+	filesEmbedTemplateType
 	globTemplateType
 	stringTemplateType
 	stringFuncTemplateType
@@ -51,6 +53,7 @@ type templateBuilder struct {
 	templateName    string
 	files           []string
 	glob            string
+	embed           embed.FS
 	templateString  string
 	funcMap         template.FuncMap
 	templateStrings []string
@@ -62,6 +65,8 @@ func (tb templateBuilder) buildTemplate() *template.Template {
 		return tb.tmpl
 	case filesTemplateType:
 		return template.Must(template.ParseFiles(tb.files...))
+	case filesEmbedTemplateType:
+		return template.Must(template.ParseFS(tb.embed, tb.files...))
 	case globTemplateType:
 		return template.Must(template.ParseGlob(tb.glob))
 	case stringTemplateType:
@@ -96,6 +101,14 @@ func (r DynamicRender) Add(name string, tmpl *template.Template) {
 func (r DynamicRender) AddFromFiles(name string, files ...string) *template.Template {
 	builder := &templateBuilder{templateName: name, files: files}
 	builder.buildType = filesTemplateType
+	r[name] = builder
+	return builder.buildTemplate()
+}
+
+// AddFromFilesInEmbed supply add template from files in an embed fs
+func (r DynamicRender) AddFromFilesInEmbed(name string, embed embed.FS, files ...string) *template.Template {
+	builder := &templateBuilder{templateName: name, files: files, embed: embed}
+	builder.buildType = filesEmbedTemplateType
 	r[name] = builder
 	return builder.buildTemplate()
 }

@@ -1,6 +1,7 @@
 package multitemplate
 
 import (
+	"embed"
 	"fmt"
 	"html/template"
 	"path/filepath"
@@ -38,6 +39,13 @@ func (r Render) Add(name string, tmpl *template.Template) {
 // AddFromFiles supply add template from files
 func (r Render) AddFromFiles(name string, files ...string) *template.Template {
 	tmpl := template.Must(template.ParseFiles(files...))
+	r.Add(name, tmpl)
+	return tmpl
+}
+
+// AddFromFilesInEmbed supply add template from files in an embed fs
+func (r Render) AddFromFilesInEmbed(name string, embed embed.FS, files ...string) *template.Template {
+	tmpl := template.Must(template.ParseFS(embed, files...))
 	r.Add(name, tmpl)
 	return tmpl
 }
