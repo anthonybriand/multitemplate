@@ -1,4 +1,4 @@
-module github.com/gin-contrib/multitemplate
+module github.com/anthonybriand/multitemplate
 
 require (
 	github.com/gin-gonic/gin v1.7.4
